@@ -1,6 +1,6 @@
 # POC Agents IA
 
-Projeto Node.js com TypeScript para desenvolvimento de agentes de IA.
+Projeto Node.js com TypeScript para desenvolvimento de agentes de IA com arquitetura desacoplada.
 
 ## 🤖 Agente de Tarefas - Trello
 
@@ -10,6 +10,48 @@ Este projeto inclui um agente inteligente para ajudar na organização e prioriz
 - 🎯 **Priorizar inteligentemente** - Organizar por importância e dependências
 - 🐛 **Analisar bugs críticos** - Focar no que é urgente
 - 📊 **Organizar por dependências** - Entender o impacto das tarefas
+
+## 🏗️ Arquitetura Desacoplada
+
+O projeto utiliza uma arquitetura modular que permite trocar facilmente entre diferentes provedores de IA:
+
+### **📁 Estrutura de Serviços:**
+
+```
+src/
+├── services/
+│   ├── ai-service.ts      # Interface abstrata para serviços de IA
+│   ├── openai-service.ts  # Implementação específica da OpenAI
+│   └── ai-factory.ts      # Factory para instanciar serviços
+├── config/
+│   ├── openai-config.ts   # Configuração da OpenAI
+│   └── ai-setup.ts        # Configurações pré-definidas
+└── index.ts               # Servidor principal
+```
+
+### **🔌 Serviços Disponíveis:**
+
+- **OpenAI Service** - Integração real com GPT-3.5/GPT-4
+- **Mock Service** - Serviço simulado para desenvolvimento/testes
+
+### **⚙️ Configuração Simples:**
+
+```typescript
+// No arquivo ai-factory.ts, linha 8:
+private static defaultServiceType: AIServiceType = 'mock'; // Mude para 'openai' quando quiser
+
+// Ou use o AISetup para configurações pré-definidas:
+import { AISetup } from './config/ai-setup';
+
+// Para desenvolvimento (Mock)
+AISetup.setupForDevelopment();
+
+// Para produção (OpenAI)
+AISetup.setupForProduction();
+
+// Para testes
+AISetup.setupForTesting();
+```
 
 ## 🚀 Scripts Disponíveis
 
@@ -38,14 +80,16 @@ npm run clean
 
 ```
 poc-agents-ia/
-├── src/           # Código fonte TypeScript
-│   └── index.ts   # Arquivo principal com servidor Express
-├── public/        # Arquivos estáticos
-│   └── chat.html  # Interface de chat do agente
-├── dist/          # Código compilado (gerado automaticamente)
-├── tsconfig.json  # Configuração TypeScript
-├── nodemon.json   # Configuração Nodemon
-└── package.json   # Dependências e scripts
+├── src/                    # Código fonte TypeScript
+│   ├── services/          # Serviços de IA
+│   ├── config/            # Configurações
+│   └── index.ts           # Servidor principal
+├── public/                # Arquivos estáticos
+│   └── chat.html          # Interface de chat
+├── dist/                  # Código compilado
+├── tsconfig.json          # Configuração TypeScript
+├── nodemon.json           # Configuração Nodemon
+└── package.json           # Dependências e scripts
 ```
 
 ## 🛠️ Tecnologias
@@ -66,16 +110,25 @@ npm install
 
 2. Configure as variáveis de ambiente (opcional):
 ```bash
-# Crie um arquivo .env na raiz do projeto
+# Copie o arquivo de exemplo
+cp env.example .env
+
+# Edite o arquivo .env com suas configurações
 OPENAI_API_KEY=sua_chave_api_aqui
 ```
 
-3. Inicie o desenvolvimento:
+3. Configure o tipo de IA (no código):
+```typescript
+// Em src/services/ai-factory.ts, linha 8:
+private static defaultServiceType: AIServiceType = 'mock'; // ou 'openai'
+```
+
+4. Inicie o desenvolvimento:
 ```bash
 npm run dev
 ```
 
-4. Acesse as URLs:
+5. Acesse as URLs:
 - **Servidor:** http://localhost:3000
 - **Chat do Agente:** http://localhost:3000/chat
 - **Health Check:** http://localhost:3000/health
@@ -116,6 +169,35 @@ Verifica o status da API.
 ### GET /chat
 Interface web para conversar com o agente.
 
+## 🔄 Trocar Provedor de IA
+
+### **Método 1: Alterar no código (Recomendado)**
+```typescript
+// Em src/services/ai-factory.ts, linha 8:
+private static defaultServiceType: AIServiceType = 'openai'; // Mude aqui
+```
+
+### **Método 2: Usar AISetup**
+```typescript
+import { AISetup } from './config/ai-setup';
+
+// No início do seu app (index.ts):
+AISetup.setupForProduction(); // Para OpenAI
+AISetup.setupForDevelopment(); // Para Mock
+```
+
+### **Método 3: Configuração manual**
+```typescript
+import { AIFactory } from './services/ai-factory';
+import { OpenAIService } from './services/openai-service';
+import { OpenAIConfigService } from './config/openai-config';
+
+// Configurar OpenAI manualmente
+const config = new OpenAIConfigService();
+const openaiService = new OpenAIService(config);
+AIFactory.setService(openaiService);
+```
+
 ## 📝 Próximos Passos
 
 - [ ] Integração real com API do Trello
@@ -123,6 +205,7 @@ Interface web para conversar com o agente.
 - [ ] Notificações inteligentes
 - [ ] Histórico de conversas
 - [ ] Personalização de prioridades
+- [ ] Suporte a outros provedores de IA (Claude, Gemini)
 
 ## 📝 Notas
 
@@ -130,4 +213,5 @@ Interface web para conversar com o agente.
 - Use `npm run dev` para desenvolvimento com hot reload
 - Use `npm run build` para compilar para produção
 - O código compilado fica na pasta `dist/`
-- Por enquanto, o agente usa dados simulados para demonstração
+- Por padrão, usa o serviço Mock para desenvolvimento
+- Configure `OPENAI_API_KEY` e mude `defaultServiceType` para 'openai' para usar a OpenAI real
